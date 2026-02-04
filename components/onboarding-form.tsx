@@ -5,22 +5,6 @@ import React from "react"
 import { useState, useEffect } from "react"
 import Script from "next/script"
 import { Button } from "@/components/ui/button"
-
-
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      "dotlottie-wc": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement> & {
-          src?: string
-          autoplay?: boolean
-          loop?: boolean
-        },
-        HTMLElement
-      >
-    }
-  }
-}
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -49,6 +33,7 @@ import {
   FileIcon,
   ArrowLeft,
 } from "lucide-react"
+
 
 const steps = [
   { id: 1, name: "Representante", icon: User },
@@ -131,11 +116,15 @@ useEffect(() => {
     taxRegime: "",
     businessType: "",
     businessDescription: "",
-    documents: [] as File[],
+    documentRTU: null as File | null,
+    documentDPI: null as File | null,
+    documentRecibo: null as File | null,
+    documentPatente: null as File | null,
     bankAccount: "",
     accountType: "",
     bankName: "",
     selectedServices: ["paymentLinks"] as string[],
+    documents: [] as File[], // Initialize documents array
   })
 
   const updateField = (field: string, value: string | string[]) => {
@@ -184,12 +173,14 @@ useEffect(() => {
     }))
   }
 
-  const handleDocumentsUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    setFormData((prev) => ({
-      ...prev,
-      documents: [...prev.documents, ...files],
-    }))
+  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>, docType: 'documentRTU' | 'documentDPI' | 'documentRecibo' | 'documentPatente') => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setFormData((prev) => ({
+        ...prev,
+        [docType]: file,
+      }))
+    }
   }
 
   const removeDocument = (index: number) => {
@@ -244,7 +235,7 @@ useEffect(() => {
           formData.businessDescription
         )
       case 3:
-        return formData.documents.length >= 1
+        return !!(formData.documentRTU) // RTU es obligatorio
       case 4:
         return !!(
           formData.bankAccount &&
@@ -303,13 +294,27 @@ useEffect(() => {
         }
       }
 
-      // Upload documents to Vercel Blob
-      const documentUrls: string[] = []
-      for (const doc of formData.documents) {
-        const uploadedDocUrl = await uploadFileToBlob(doc, 'document')
-        if (uploadedDocUrl) {
-          documentUrls.push(uploadedDocUrl)
-        }
+      // Upload individual documents to Vercel Blob
+      let documentRTUUrl = ""
+      let documentDPIUrl = ""
+      let documentReciboUrl = ""
+      let documentPatenteUrl = ""
+
+      if (formData.documentRTU) {
+        const url = await uploadFileToBlob(formData.documentRTU, 'rtu')
+        if (url) documentRTUUrl = url
+      }
+      if (formData.documentDPI) {
+        const url = await uploadFileToBlob(formData.documentDPI, 'dpi')
+        if (url) documentDPIUrl = url
+      }
+      if (formData.documentRecibo) {
+        const url = await uploadFileToBlob(formData.documentRecibo, 'recibo')
+        if (url) documentReciboUrl = url
+      }
+      if (formData.documentPatente) {
+        const url = await uploadFileToBlob(formData.documentPatente, 'patente')
+        if (url) documentPatenteUrl = url
       }
 
       const result = await submitOnboarding({
@@ -324,7 +329,10 @@ useEffect(() => {
         taxRegime: formData.taxRegime,
         businessType: formData.businessType,
         businessDescription: formData.businessDescription,
-        documents: documentUrls.join(","),
+        documentRTU: documentRTUUrl,
+        documentDPI: documentDPIUrl,
+        documentRecibo: documentReciboUrl,
+        documentPatente: documentPatenteUrl,
         bankAccount: formData.bankAccount,
         accountType: formData.accountType,
         bankName: formData.bankName,
@@ -616,55 +624,143 @@ useEffect(() => {
           <div className="space-y-5">
             <h3 className="mb-4 text-lg font-semibold">Documentación</h3>
             <p className="mb-4 text-sm text-muted-foreground">
-              Sube los documentos que tengas disponibles (Patente de Comercio, RTU, Escritura Constitutiva, Licencia Sanitaria, etc.)
+              Sube los documentos requeridos para el proceso de onboarding.
             </p>
-            <div className="space-y-4">
-              <label className="flex min-h-[120px] w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/30 p-4 transition-colors hover:border-primary hover:bg-primary/5">
-                <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">
-                  Haz clic para subir documentos
-                </span>
-                <span className="text-xs text-muted-foreground/70">
-                  PDF, PNG, JPG (múltiples archivos permitidos)
-                </span>
-                <input
-                  type="file"
-                  accept=".pdf,.png,.jpg,.jpeg"
-                  multiple
-                  onChange={handleDocumentsUpload}
-                  className="hidden"
-                />
-              </label>
-              {formData.documents.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Archivos subidos ({formData.documents.length})</Label>
-                  <div className="space-y-2">
-                    {formData.documents.map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between rounded-lg border bg-muted/30 p-3"
-                      >
-                        <div className="flex items-center gap-2">
-                          <FileIcon className="h-5 w-5 text-muted-foreground" />
-                          <span className="text-sm truncate max-w-[200px]">
-                            {file.name}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeDocument(index)}
-                          className="rounded-full p-1 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
+            
+            {/* RTU */}
+            <div className="space-y-2">
+              <Label>RTU (Registro Tributario Unificado) *</Label>
+              {formData.documentRTU ? (
+                <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+                  <div className="flex items-center gap-2">
+                    <FileIcon className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm truncate max-w-[200px]">
+                      {formData.documentRTU.name}
+                    </span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => removeDocument('documentRTU')}
+                    className="rounded-full p-1 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
+              ) : (
+                <label className="flex h-20 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/30 transition-colors hover:border-primary hover:bg-primary/5">
+                  <Upload className="mb-1 h-5 w-5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Subir RTU</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    onChange={(e) => handleDocumentUpload(e, 'documentRTU')}
+                    className="hidden"
+                  />
+                </label>
               )}
             </div>
+
+            {/* DPI */}
+            <div className="space-y-2">
+              <Label>Copia de DPI (ambos lados)</Label>
+              {formData.documentDPI ? (
+                <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+                  <div className="flex items-center gap-2">
+                    <FileIcon className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm truncate max-w-[200px]">
+                      {formData.documentDPI.name}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeDocument('documentDPI')}
+                    className="rounded-full p-1 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex h-20 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/30 transition-colors hover:border-primary hover:bg-primary/5">
+                  <Upload className="mb-1 h-5 w-5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Subir DPI</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    onChange={(e) => handleDocumentUpload(e, 'documentDPI')}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+
+            {/* Recibo de Luz o Agua */}
+            <div className="space-y-2">
+              <Label>Recibo de Luz o Agua</Label>
+              {formData.documentRecibo ? (
+                <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+                  <div className="flex items-center gap-2">
+                    <FileIcon className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm truncate max-w-[200px]">
+                      {formData.documentRecibo.name}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeDocument('documentRecibo')}
+                    className="rounded-full p-1 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex h-20 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/30 transition-colors hover:border-primary hover:bg-primary/5">
+                  <Upload className="mb-1 h-5 w-5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Subir Recibo</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    onChange={(e) => handleDocumentUpload(e, 'documentRecibo')}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+
+            {/* Patente de Comercio */}
+            <div className="space-y-2">
+              <Label>Patente de Comercio</Label>
+              {formData.documentPatente ? (
+                <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+                  <div className="flex items-center gap-2">
+                    <FileIcon className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm truncate max-w-[200px]">
+                      {formData.documentPatente.name}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeDocument('documentPatente')}
+                    className="rounded-full p-1 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex h-20 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/30 transition-colors hover:border-primary hover:bg-primary/5">
+                  <Upload className="mb-1 h-5 w-5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Subir Patente</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    onChange={(e) => handleDocumentUpload(e, 'documentPatente')}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+
             <p className="text-xs text-muted-foreground/70 italic">
-              (Documentación Pendiente de Aprobación)
+              * RTU es obligatorio. Los demás documentos son opcionales.
             </p>
           </div>
         )}
