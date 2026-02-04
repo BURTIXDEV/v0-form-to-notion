@@ -1,5 +1,6 @@
 "use client"
 
+// MIGO Payments Onboarding Form - Updated Feb 2026
 import React from "react"
 
 import { useState, useEffect } from "react"
@@ -52,9 +53,19 @@ const countries = [
 ]
 
 const services = [
-  { id: "api", label: "Documentacion API" },
   { id: "paymentLinks", label: "Links de Pago" },
   { id: "installments", label: "Habilitacion Cuotas" },
+]
+
+const businessTypes = [
+  "Servicios Profesionales Personales y Empresariales",
+  "Comercio y Retail (Ventas)",
+  "Educación Salud y Bienestar",
+  "Viajes Transporte y Hospitalidad",
+  "Bienes Raíces y Construcción",
+  "Alimentos y Bebidas (Consumo Masivo)",
+  "Tecnología y Servicios Digitales",
+  "Entretenimiento y Recreación",
 ]
 
 const guatemalaBanks = [
@@ -379,6 +390,14 @@ useEffect(() => {
         <p className="max-w-md text-lg text-muted-foreground">
           Atento a tu bandeja de correo para recibir tus credenciales.
         </p>
+        <a
+          href="https://migopayments.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-6 text-primary hover:underline"
+        >
+          Conoce más en: migopayments.com
+        </a>
       </div>
     )
   }
@@ -595,13 +614,21 @@ useEffect(() => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="businessType">Giro del Negocio *</Label>
-              <Input
-                id="businessType"
+              <Select
                 value={formData.businessType}
-                onChange={(e) => updateField("businessType", e.target.value)}
-                placeholder="Tipo de negocio"
-                className="h-12"
-              />
+                onValueChange={(value) => updateField("businessType", value)}
+              >
+                <SelectTrigger id="businessType" className="h-12 w-full">
+                  <SelectValue placeholder="Selecciona el giro de negocio" />
+                </SelectTrigger>
+                <SelectContent>
+                  {businessTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="businessDescription">
@@ -861,20 +888,31 @@ useEffect(() => {
                   {services
                     .filter((service) => service.id !== "paymentLinks")
                     .map((service) => (
-                      <label
-                        key={service.id}
-                        className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
-                          formData.selectedServices.includes(service.id)
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:border-primary/50"
-                        }`}
-                      >
-                        <Checkbox
-                          checked={formData.selectedServices.includes(service.id)}
-                          onCheckedChange={() => toggleService(service.id)}
-                        />
-                        <span className="text-sm font-medium">{service.label}</span>
-                      </label>
+                      <div key={service.id} className="space-y-2">
+                        <label
+                          className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-4 transition-colors ${
+                            formData.selectedServices.includes(service.id)
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:border-primary/50"
+                          }`}
+                        >
+                          <Checkbox
+                            checked={formData.selectedServices.includes(service.id)}
+                            onCheckedChange={() => toggleService(service.id)}
+                          />
+                          <span className="text-sm font-medium">{service.label}</span>
+                        </label>
+                        {service.id === "installments" && formData.selectedServices.includes("installments") && (
+                          <a
+                            href="/tasas-cuotas.jpg"
+                            download="tasas-comision-cuotas.jpg"
+                            className="flex items-center gap-2 ml-7 text-sm text-primary hover:underline"
+                          >
+                            <FileText className="h-4 w-4" />
+                            Descargar tabla de tasas de comisiones
+                          </a>
+                        )}
+                      </div>
                     ))}
                 </div>
               </div>
