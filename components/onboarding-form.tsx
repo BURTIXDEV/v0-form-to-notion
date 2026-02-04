@@ -1,6 +1,6 @@
 "use client"
 
-// MIGO Payments Onboarding Form - Updated Feb 2026
+// MIGO Payments Onboarding Form v2.0 - Updated Feb 4, 2026
 import React from "react"
 
 import { useState, useEffect } from "react"
