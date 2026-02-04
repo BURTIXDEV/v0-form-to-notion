@@ -904,8 +904,10 @@ useEffect(() => {
                         </label>
                         {service.id === "installments" && formData.selectedServices.includes("installments") && (
                           <a
-                            href="/tasas-cuotas.jpg"
-                            download="tasas-comision-cuotas.jpg"
+                            href="https://i.postimg.cc/mDRDJrKt/Cuotas-MIGO-2026.png"
+                            download="Cuotas-MIGO-2026.png"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="flex items-center gap-2 ml-7 text-sm text-primary hover:underline"
                           >
                             <FileText className="h-4 w-4" />
