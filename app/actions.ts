@@ -20,7 +20,10 @@ interface OnboardingData {
   taxRegime: string
   businessType: string
   businessDescription: string
-  documents: string
+  documentRTU: string
+  documentDPI: string
+  documentRecibo: string
+  documentPatente: string
   bankAccount: string
   accountType: string
   bankName: string
@@ -152,19 +155,60 @@ export async function submitOnboarding(data: OnboardingData) {
       }
     }
     
-    // Add documents list - files type (supports multiple URLs separated by comma)
-    if (data.documents) {
-      const documentUrls = data.documents.split(",").filter(url => url.trim() && !url.startsWith("data:"))
-      if (documentUrls.length > 0) {
-        properties["Documents"] = {
-          files: documentUrls.map((url, index) => ({
+    // Add individual document files
+    if (data.documentRTU) {
+      properties["RTU"] = {
+        files: [
+          {
             type: "external",
-            name: `Document ${index + 1}`,
+            name: "RTU",
             external: {
-              url: url.trim(),
+              url: data.documentRTU,
             },
-          })),
-        }
+          },
+        ],
+      }
+    }
+
+    if (data.documentDPI) {
+      properties["DPI"] = {
+        files: [
+          {
+            type: "external",
+            name: "DPI",
+            external: {
+              url: data.documentDPI,
+            },
+          },
+        ],
+      }
+    }
+
+    if (data.documentRecibo) {
+      properties["Recibo Servicios"] = {
+        files: [
+          {
+            type: "external",
+            name: "Recibo",
+            external: {
+              url: data.documentRecibo,
+            },
+          },
+        ],
+      }
+    }
+
+    if (data.documentPatente) {
+      properties["Patente Comercio"] = {
+        files: [
+          {
+            type: "external",
+            name: "Patente",
+            external: {
+              url: data.documentPatente,
+            },
+          },
+        ],
       }
     }
 
