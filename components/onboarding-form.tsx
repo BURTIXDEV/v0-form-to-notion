@@ -235,7 +235,7 @@ useEffect(() => {
           formData.businessDescription
         )
       case 3:
-        return !!(formData.documentRTU) // RTU es obligatorio
+        return !!(formData.documentRTU && formData.documentDPI && formData.documentRecibo && formData.documentPatente)
       case 4:
         return !!(
           formData.bankAccount &&
@@ -662,7 +662,7 @@ useEffect(() => {
 
             {/* DPI */}
             <div className="space-y-2">
-              <Label>Copia de DPI (ambos lados)</Label>
+              <Label>Copia de DPI (ambos lados) *</Label>
               {formData.documentDPI ? (
                 <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
                   <div className="flex items-center gap-2">
@@ -695,7 +695,7 @@ useEffect(() => {
 
             {/* Recibo de Luz o Agua */}
             <div className="space-y-2">
-              <Label>Recibo de Luz o Agua</Label>
+              <Label>Recibo de Luz o Agua *</Label>
               {formData.documentRecibo ? (
                 <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
                   <div className="flex items-center gap-2">
@@ -728,7 +728,7 @@ useEffect(() => {
 
             {/* Patente de Comercio */}
             <div className="space-y-2">
-              <Label>Patente de Comercio</Label>
+              <Label>Patente de Comercio *</Label>
               {formData.documentPatente ? (
                 <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
                   <div className="flex items-center gap-2">
@@ -760,7 +760,7 @@ useEffect(() => {
             </div>
 
             <p className="text-xs text-muted-foreground/70 italic">
-              * RTU es obligatorio. Los demás documentos son opcionales.
+              * Todos los documentos son obligatorios.
             </p>
           </div>
         )}
