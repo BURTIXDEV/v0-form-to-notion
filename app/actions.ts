@@ -8,11 +8,6 @@ const notion = new Client({
 
 const DATABASE_ID = "2fcce918f4fb80579898c5b9dd26b3b3"
 
-// Zendesk configuration
-const ZENDESK_SUBDOMAIN = "migopaymentssupport"
-const ZENDESK_EMAIL = process.env.ZENDESK_EMAIL || "support@migopaymentssupport.zendesk.com"
-const ZENDESK_API_KEY = process.env.ZENDESK_API_KEY
-
 interface OnboardingData {
   representativeName: string
   idNumber: string
@@ -30,82 +25,6 @@ interface OnboardingData {
   accountType: string
   bankName: string
   services: string[]
-}
-
-async function createZendeskTicket(data: OnboardingData) {
-  if (!ZENDESK_API_KEY) {
-    console.error("Zendesk API key not configured")
-    return { success: false, error: "Zendesk API key not configured" }
-  }
-
-  const ticketBody = `
-Nueva solicitud de onboarding de comercio:
-
-=== INFORMACIÓN DEL REPRESENTANTE ===
-Nombre: ${data.representativeName}
-Número de ID: ${data.idNumber}
-Email: ${data.email}
-Teléfono: ${data.phone}
-
-=== INFORMACIÓN DEL NEGOCIO ===
-Nombre del Negocio: ${data.businessName}
-País: ${data.country}
-NIT/Tax ID: ${data.taxId}
-Régimen Tributario: ${data.taxRegime}
-Tipo de Negocio: ${data.businessType}
-Descripción: ${data.businessDescription}
-
-=== INFORMACIÓN BANCARIA ===
-Cuenta Bancaria: ${data.bankAccount}
-Tipo de Cuenta: ${data.accountType}
-Banco: ${data.bankName}
-
-=== SERVICIOS SOLICITADOS ===
-${data.services?.join(", ") || "Ninguno seleccionado"}
-
-=== DOCUMENTOS ===
-${data.documents || "No especificados"}
-  `.trim()
-
-  const ticketData = {
-    ticket: {
-      subject: `Onboarding Comercio: ${data.businessName}`,
-      comment: {
-        body: ticketBody,
-      },
-      requester: {
-        name: data.representativeName,
-        email: data.email,
-      },
-      priority: "normal",
-      tags: ["onboarding", "nuevo-comercio", data.country?.toLowerCase() || "sin-pais"],
-    },
-  }
-
-  try {
-    const credentials = Buffer.from(`${ZENDESK_EMAIL}/token:${ZENDESK_API_KEY}`).toString("base64")
-    
-    const response = await fetch(`https://${ZENDESK_SUBDOMAIN}.zendesk.com/api/v2/tickets.json`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${credentials}`,
-      },
-      body: JSON.stringify(ticketData),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("Zendesk API error:", errorText)
-      return { success: false, error: `Zendesk error: ${response.status}` }
-    }
-
-    const result = await response.json()
-    return { success: true, ticketId: result.ticket?.id }
-  } catch (error) {
-    console.error("Error creating Zendesk ticket:", error)
-    return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
-  }
 }
 
 export async function submitOnboarding(data: OnboardingData) {
@@ -258,14 +177,7 @@ export async function submitOnboarding(data: OnboardingData) {
       >[0]["properties"],
     })
 
-    // Also create a Zendesk ticket
-    const zendeskResult = await createZendeskTicket(data)
-    if (!zendeskResult.success) {
-      console.error("Zendesk ticket creation failed:", zendeskResult.error)
-      // We don't fail the whole submission if Zendesk fails, just log it
-    }
-
-    return { success: true, zendeskTicketId: zendeskResult.ticketId }
+    return { success: true }
   } catch (error) {
     console.error("Error submitting to Notion:", error)
     return {
